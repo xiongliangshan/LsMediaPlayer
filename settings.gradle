@@ -1,0 +1,3 @@
+include ':lsplayer'
+include ':app'
+rootProject.name = "MediaPlayer"
