@@ -23,29 +23,6 @@ interface LsPlayerCallback : CommonCallback {
      */
     fun onInfo(infoBean:InfoBean?)
 
-    /**
-     * 显示字幕
-     */
-    fun onSubtitleShow(p0: Int,id:Long, data:String?)
-
-
-
-    fun onSubtitleExtAdded(p0: Int, p1: String?)
-
-    /**
-     * 隐藏字幕
-     */
-    fun onSubtitleHide(p0: Int,id:Long)
-
-    /**
-     * 切换音视频流或者清晰度成功
-     */
-    fun onChangedSuccess(trackInfo: TrackInfo?)
-
-    /**
-     * 切换音视频流或者清晰度失败
-     */
-    fun onChangedFail(trackInfo:TrackInfo?, errorInfo: ErrorInfo?)
 
     /**
      * 截图事件

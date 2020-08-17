@@ -13,38 +13,33 @@ import com.aliyun.player.AliPlayerFactory
 import com.aliyun.player.IPlayer
 import com.aliyun.player.bean.ErrorInfo
 import com.aliyun.player.bean.InfoCode
-import com.aliyun.player.nativeclass.CacheConfig
 import com.aliyun.player.nativeclass.TrackInfo
 import com.aliyun.player.source.UrlSource
 import com.xls.player.*
+import com.xls.player.log.SLog
 
 class AliPlayerWrapper(private val context:Context): CommonPlayer() {
 
     private var aliPlayer:AliPlayer = AliPlayerFactory.createAliPlayer(context.applicationContext)
     init {
         setListeners()
+        SLog.i(PlayerEngine.TAG,"create player instance : AliPlayer")
     }
 
     override fun config(config: LsConfig?) {
         config?.let {
             aliPlayer.isLoop = it.isLoop
             it.cacheConfig?.run {
-                aliPlayer.setCacheConfig(transformCacheConfig(this))
+                aliPlayer.setCacheConfig(AliAdapter.transformCacheConfig(this))
+            }
+            it.netConfig?.run {
+                val aliConfig = aliPlayer.config
+                aliConfig.mNetworkTimeout = this.networkTimeout
+                aliConfig.mNetworkRetryCount = this.networkRetryCount
+                aliPlayer.config = aliConfig
             }
         }
     }
-
-
-    private fun transformCacheConfig(lsCacheConfig: LsCacheConfig):CacheConfig{
-        return CacheConfig().apply {
-            this.mEnable = true
-            this.mDir = lsCacheConfig.dir
-            SLog.i(PlayerEngine.TAG,"mDir = $mDir")
-            this.mMaxDurationS = lsCacheConfig.maxDurationS
-            this.mMaxSizeMB = lsCacheConfig.maxSizeMB
-        }
-    }
-
 
     private fun setListeners(){
         aliPlayer.setOnPreparedListener {
@@ -53,12 +48,12 @@ class AliPlayerWrapper(private val context:Context): CommonPlayer() {
             aliPlayer.start()
         }
         aliPlayer.setOnCompletionListener{
-            SLog.i(PlayerEngine.TAG,"onPrepared")
+            SLog.i(PlayerEngine.TAG,"onCompletion")
             callback?.onCompletion()
         }
         aliPlayer.setOnErrorListener{
             SLog.e(PlayerEngine.TAG,"onError ${it.code} | ${it.msg} | ${it.extra}")
-            callback?.onError(it)
+            callback?.onError(LsErrorInfo(it.code.value,it.msg,it.extra))
         }
         aliPlayer.setOnVideoSizeChangedListener { p0, p1 ->
             SLog.i(PlayerEngine.TAG, "onVideoSizeChanged,width = $p0 height = $p1")
@@ -116,35 +111,9 @@ class AliPlayerWrapper(private val context:Context): CommonPlayer() {
             SLog.i(PlayerEngine.TAG, "onSeekComplete")
             callback?.onSeekComplete()
         }
-        aliPlayer.setOnSubtitleDisplayListener(object :IPlayer.OnSubtitleDisplayListener{
-            override fun onSubtitleExtAdded(p0: Int, p1: String?) {
-                SLog.i(PlayerEngine.TAG,"onSubtitleExtAdded,$p0 $p1}")
-                callback?.onSubtitleExtAdded(p0,p1)
-            }
 
-            override fun onSubtitleShow(p0: Int, p1: Long, p2: String?) {
-                SLog.i(PlayerEngine.TAG,"onSubtitleShow,$p0 $p1 $p2}")
-                callback?.onSubtitleShow(p0,p1,p2)
-            }
-
-            override fun onSubtitleHide(p0: Int, p1: Long) {
-                SLog.i(PlayerEngine.TAG,"onSubtitleHide,$p0 $p1}")
-                callback?.onSubtitleHide(p0,p1)
-            }
-        })
-        aliPlayer.setOnTrackChangedListener(object :IPlayer.OnTrackChangedListener{
-            override fun onChangedSuccess(p0: TrackInfo?) {
-                SLog.i(PlayerEngine.TAG,"onChangedSuccess,${p0?.toString()}}")
-                callback?.onChangedSuccess(p0)
-            }
-
-            override fun onChangedFail(p0: TrackInfo?, p1: ErrorInfo?) {
-                SLog.i(PlayerEngine.TAG,"onChangedFail,${p0?.toString()} ${p1?.toString()}")
-                callback?.onChangedFail(p0,p1)
-            }
-        })
         aliPlayer.setOnStateChangedListener { p0 ->
-            currentState = convert(p0)
+            currentState = PlayerState.convert(p0)
             SLog.i(PlayerEngine.TAG, "onStateChanged : $currentState")
             callback?.onStateChanged(p0)
         }
@@ -205,6 +174,7 @@ class AliPlayerWrapper(private val context:Context): CommonPlayer() {
     }
 
     override fun setDisplay(surface: SurfaceView) {
+        SLog.i(PlayerEngine.TAG,"render : SurfaceView")
         surface.holder.addCallback(object :SurfaceHolder.Callback{
             override fun surfaceChanged(
                 holder: SurfaceHolder?,
@@ -226,6 +196,7 @@ class AliPlayerWrapper(private val context:Context): CommonPlayer() {
     }
 
     override fun setDisplay(texture: TextureView) {
+        SLog.i(PlayerEngine.TAG,"render : TextureView")
         texture.surfaceTextureListener = object : TextureView.SurfaceTextureListener{
             override fun onSurfaceTextureSizeChanged(
                 surface: SurfaceTexture?,
@@ -262,6 +233,10 @@ class AliPlayerWrapper(private val context:Context): CommonPlayer() {
 
     override fun isMute(): Boolean {
         return aliPlayer.isMute
+    }
+
+    override fun setScaleMode(mode: LsScaleMode) {
+        aliPlayer.scaleMode = AliAdapter.transformScaleMode(mode)
     }
 
     override fun bindLifecycle(owner: LifecycleOwner?) {

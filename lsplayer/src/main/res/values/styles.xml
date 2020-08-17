@@ -1,0 +1,10 @@
+<resources>
+    
+    <declare-styleable name="LsVideoTextureView">
+        <attr name="player_type">
+            <enum name="ali" value="1" />
+            <enum name="media" value="2" />
+        </attr>
+    </declare-styleable>
+
+</resources>

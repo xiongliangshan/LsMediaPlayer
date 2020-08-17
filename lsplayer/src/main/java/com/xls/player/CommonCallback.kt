@@ -16,7 +16,7 @@ interface CommonCallback {
     /**
      * 出错事件
      */
-    fun onError(errorInfo: ErrorInfo)
+    fun onError(errorInfo: LsErrorInfo)
 
     /**
      * 缓冲开始

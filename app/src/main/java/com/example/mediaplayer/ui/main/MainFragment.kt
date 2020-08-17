@@ -14,7 +14,7 @@ import java.io.File
 
 class MainFragment : Fragment(),View.OnClickListener {
 
-    var player: CommonPlayer? = null
+//    var player: CommonPlayer? = null
     private var degree = 30f
     private var scaleFactor = 0.3f
     private var direction = 0
@@ -38,20 +38,20 @@ class MainFragment : Fragment(),View.OnClickListener {
         super.onActivityCreated(savedInstanceState)
         viewModel = ViewModelProvider(this).get(MainViewModel::class.java)
         context?.let {
-            player = PlayerEngine.createPlayer(it)
             player?.lsConfig  = LsConfig.Builder()
                 .setLoop(true)
                 .setCacheDir(LsCacheConfig(it.cacheDir.absolutePath+File.separator+"video"))
                 .setAutoPlay(true)
+                .setNetConfig(LsNetConfig(5000,2))
                 .build()
             player?.bindLifecycle(MainFragment@this)
             player?.callback = object :SimpleLsPlayerCallback(){
-                override fun onError(errorInfo: ErrorInfo) {
-                    super.onError(errorInfo)
+                override fun onError(errorInfo: LsErrorInfo) {
+                    TODO("Not yet implemented")
                 }
             }
-            player?.setDisplay(lsTextureView)
-            player?.setDataSource(url)
+//            player?.setDisplay(player)
+            player?.setDataSource(url1)
             player?.prepare()
         }
         btnStart.setOnClickListener(this)
@@ -81,19 +81,19 @@ class MainFragment : Fragment(),View.OnClickListener {
                 }
             }
             R.id.btnRotate ->{
-                lsTextureView.rotation = lsTextureView.rotation+degree
+                player.rotation = player.rotation+degree
             }
             R.id.btnScale ->{
                 if(direction==0){
-                    lsTextureView.scaleX = lsTextureView.scaleX+scaleFactor
-                    lsTextureView.scaleY = lsTextureView.scaleY+scaleFactor
-                    if( lsTextureView.scaleY>3){
+                    player.scaleX = player.scaleX+scaleFactor
+                    player.scaleY = player.scaleY+scaleFactor
+                    if( player.scaleY>3){
                         direction = 1
                     }
                 }else {
-                    lsTextureView.scaleX = lsTextureView.scaleX-scaleFactor
-                    lsTextureView.scaleY = lsTextureView.scaleY-scaleFactor
-                    if(lsTextureView.scaleX<0.3){
+                    player.scaleX = player.scaleX-scaleFactor
+                    player.scaleY = player.scaleY-scaleFactor
+                    if(player.scaleX<0.3){
                         direction = 0
                     }
                 }

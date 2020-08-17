@@ -49,7 +49,7 @@ open class SimpleLsPlayerCallback :LsPlayerCallback{
 
     }
 
-    override fun onError(errorInfo: ErrorInfo) {
+    override fun onError(errorInfo: LsErrorInfo) {
 
     }
 

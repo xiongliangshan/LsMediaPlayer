@@ -16,8 +16,25 @@
         app:layout_constraintTop_toTopOf="parent"
         app:layout_constraintDimensionRatio="w,4:3"/>-->
 
-    <TextureView
+    <!--<TextureView
         android:id="@+id/lsTextureView"
+        android:layout_width="0dp"
+        android:layout_height="300dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintDimensionRatio="w,4:3"/>-->
+
+    <!--<com.xls.player.widget.LsVideoTextureView
+        android:id="@+id/player"
+        android:layout_width="0dp"
+        android:layout_height="300dp"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintDimensionRatio="w,4:3"/>-->
+    <com.xls.player.widget.LsVideoSurfaceView
+        android:id="@+id/player"
         android:layout_width="0dp"
         android:layout_height="300dp"
         app:layout_constraintLeft_toLeftOf="parent"
