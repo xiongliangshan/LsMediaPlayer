@@ -3,14 +3,12 @@ package com.xls.player
 class LsConfig{
     var isLoop:Boolean = false
     var cacheConfig:LsCacheConfig? = null
-    var isAutoPlay:Boolean = false
     var netConfig:LsNetConfig? = null
 
 
     class Builder{
         private var isLoop:Boolean = false
         private var cacheConfig:LsCacheConfig? = null
-        private var isAutoPlay:Boolean = false
         private var netConfig:LsNetConfig? = null
 
 
@@ -24,10 +22,6 @@ class LsConfig{
             return this
         }
 
-        fun setAutoPlay(isAutoPlay:Boolean):Builder{
-            this.isAutoPlay = isAutoPlay
-            return this
-        }
 
         fun setNetConfig(netConfig: LsNetConfig?):Builder{
             this.netConfig = netConfig
@@ -38,7 +32,6 @@ class LsConfig{
             val lsConfig = LsConfig()
             lsConfig.isLoop = this.isLoop
             lsConfig.cacheConfig = this.cacheConfig
-            lsConfig.isAutoPlay = this.isAutoPlay
             lsConfig.netConfig = this.netConfig
             return lsConfig
         }

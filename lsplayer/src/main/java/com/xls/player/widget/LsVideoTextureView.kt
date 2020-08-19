@@ -29,6 +29,7 @@ class LsVideoTextureView @JvmOverloads constructor(
             field = value
             player.lsConfig = value
         }
+
     var callback: LsPlayerCallback? = null
         set(value) {
             field = value
@@ -43,7 +44,7 @@ class LsVideoTextureView @JvmOverloads constructor(
         context?.run {
             attrs.let {
                 val typedArray = context.obtainStyledAttributes(it, R.styleable.LsVideoTextureView)
-                playerValue = typedArray.getInt(R.styleable.LsVideoTextureView_player_type,1)
+                playerValue = typedArray.getInt(R.styleable.LsVideoTextureView_t_player_type,1)
                 typedArray.recycle()
             }
             player = PlayerEngine.createPlayer(this, PlayerType.convert(playerValue))
@@ -64,6 +65,10 @@ class LsVideoTextureView @JvmOverloads constructor(
 
     override fun prepare() {
         player.prepare()
+    }
+
+    override fun prepareAndStart() {
+        player.prepareAndStart()
     }
 
     override fun start() {
@@ -114,11 +119,16 @@ class LsVideoTextureView @JvmOverloads constructor(
         player.bindLifecycle(owner)
     }
 
-    override fun config(config: LsConfig?) {
-        player.config(config)
-    }
 
     override fun setScaleMode(mode: LsScaleMode) {
         player.setScaleMode(mode)
+    }
+
+    override fun setVolume(volume: Float) {
+        player.setVolume(volume)
+    }
+
+    override fun getDuration(): Long {
+        return player.getDuration()
     }
 }

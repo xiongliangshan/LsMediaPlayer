@@ -1,8 +1,10 @@
 package com.xls.player.ali
 
 import com.aliyun.player.IPlayer
+import com.aliyun.player.bean.InfoBean
 import com.aliyun.player.nativeclass.CacheConfig
 import com.xls.player.LsCacheConfig
+import com.xls.player.LsInfo
 import com.xls.player.LsScaleMode
 import com.xls.player.PlayerEngine
 import com.xls.player.log.SLog
@@ -28,5 +30,15 @@ object AliAdapter {
             LsScaleMode.SCALE_TO_FILL -> IPlayer.ScaleMode.SCALE_TO_FILL
             else -> IPlayer.ScaleMode.SCALE_ASPECT_FIT
         }
+    }
+
+    @JvmStatic
+    fun transformInfo(infoBean: InfoBean?):LsInfo?{
+        return if(infoBean==null){
+            null
+        }else{
+            LsInfo(infoBean.code.value,infoBean.extraMsg,infoBean.extraValue.toString())
+        }
+
     }
 }

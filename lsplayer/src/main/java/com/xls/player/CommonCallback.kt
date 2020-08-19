@@ -1,7 +1,5 @@
 package com.xls.player
 
-import com.aliyun.player.bean.ErrorInfo
-
 interface CommonCallback {
     /**
      * 准备成功事件
@@ -16,22 +14,22 @@ interface CommonCallback {
     /**
      * 出错事件
      */
-    fun onError(errorInfo: LsErrorInfo)
+    fun onError(info: LsInfo)
 
     /**
      * 缓冲开始
      */
-    fun onLoadingBegin()
+    fun onBufferingBegin()
 
     /**
      * 缓冲进度
      */
-    fun onLoadingProgress(percent:Int, kbps:Float)
+    fun onBufferingProgress(percent:Int, kbps:Float)
 
     /**
      * 缓冲结束
      */
-    fun onLoadingEnd()
+    fun onBufferingEnd()
 
     /**
      * 拖动结束
@@ -42,4 +40,15 @@ interface CommonCallback {
      * 播放器状态改变事件
      */
     fun onStateChanged(newState:Int)
+
+    /**
+     * 内部获取总时长完成，
+     * 此时可以通过getDuration拿到数据了
+     */
+    fun onFetchDurationFinished(duration:Long)
+
+    /**
+     * 播放进度
+     */
+    fun onPlayProgress(percent:Int)
 }

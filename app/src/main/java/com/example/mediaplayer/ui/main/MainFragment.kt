@@ -6,7 +6,6 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
-import com.aliyun.player.bean.ErrorInfo
 import com.example.mediaplayer.R
 import com.xls.player.*
 import kotlinx.android.synthetic.main.main_fragment.*
@@ -25,6 +24,7 @@ class MainFragment : Fragment(),View.OnClickListener {
         const val url = "https://stream7.iqilu.com/10339/upload_transcode/202002/18/20200218093206z8V1JuPlpe.mp4"
         const val url1 = "http://stream.iqilu.com/vod_bag_2016//2020/02/16/903BE158056C44fcA9524B118A5BF230/903BE158056C44fcA9524B118A5BF230_H264_mp4_500K.mp4"
 
+
     }
 
     private lateinit var viewModel: MainViewModel
@@ -41,18 +41,17 @@ class MainFragment : Fragment(),View.OnClickListener {
             player?.lsConfig  = LsConfig.Builder()
                 .setLoop(true)
                 .setCacheDir(LsCacheConfig(it.cacheDir.absolutePath+File.separator+"video"))
-                .setAutoPlay(true)
                 .setNetConfig(LsNetConfig(5000,2))
                 .build()
             player?.bindLifecycle(MainFragment@this)
             player?.callback = object :SimpleLsPlayerCallback(){
-                override fun onError(errorInfo: LsErrorInfo) {
-                    TODO("Not yet implemented")
+                override fun onError(info: LsInfo) {
+
                 }
             }
 //            player?.setDisplay(player)
-            player?.setDataSource(url1)
-            player?.prepare()
+            player?.setDataSource(url)
+            player?.prepareAndStart()
         }
         btnStart.setOnClickListener(this)
         btnPause.setOnClickListener(this)

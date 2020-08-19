@@ -6,6 +6,8 @@ import android.view.SurfaceView
 import androidx.lifecycle.LifecycleOwner
 import com.example.lib_player.R
 import com.xls.player.*
+import com.xls.player.log.SLog
+import java.util.logging.Logger
 
 class LsVideoSurfaceView @JvmOverloads constructor(
     context: Context?,
@@ -29,6 +31,7 @@ class LsVideoSurfaceView @JvmOverloads constructor(
             field = value
             player.lsConfig = value
         }
+
     var callback: LsPlayerCallback? = null
         set(value) {
             field = value
@@ -40,8 +43,8 @@ class LsVideoSurfaceView @JvmOverloads constructor(
 
         context?.run {
             attrs.let {
-                val typedArray = context.obtainStyledAttributes(it, R.styleable.LsVideoTextureView)
-                playerValue = typedArray.getInt(R.styleable.LsVideoTextureView_player_type,1)
+                val typedArray = context.obtainStyledAttributes(it, R.styleable.LsVideoSurfaceView)
+                playerValue = typedArray.getInt(R.styleable.LsVideoSurfaceView_s_player_type,1)
                 typedArray.recycle()
             }
             player = PlayerEngine.createPlayer(this, PlayerType.convert(playerValue))
@@ -60,6 +63,10 @@ class LsVideoSurfaceView @JvmOverloads constructor(
 
     override fun prepare() {
         player.prepare()
+    }
+
+    override fun prepareAndStart() {
+        player.prepareAndStart()
     }
 
     override fun start() {
@@ -110,11 +117,16 @@ class LsVideoSurfaceView @JvmOverloads constructor(
         player.bindLifecycle(owner)
     }
 
-    override fun config(config: LsConfig?) {
-        player.config(config)
-    }
 
     override fun setScaleMode(mode: LsScaleMode) {
         player.setScaleMode(mode)
+    }
+
+    override fun setVolume(volume: Float) {
+        player.setVolume(volume)
+    }
+
+    override fun getDuration(): Long {
+        return player.getDuration()
     }
 }

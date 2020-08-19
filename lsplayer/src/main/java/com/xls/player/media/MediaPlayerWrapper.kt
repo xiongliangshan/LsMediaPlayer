@@ -16,6 +16,8 @@ import com.xls.player.log.SLog
 class MediaPlayerWrapper(private val context: Context) :CommonPlayer(){
 
     private var mediaPlayer: MediaPlayer = MediaPlayer()
+    private var mIsMute = false
+    private var mVolume = 1f
 
     init {
         setListeners()
@@ -25,9 +27,13 @@ class MediaPlayerWrapper(private val context: Context) :CommonPlayer(){
     private fun setListeners() {
         mediaPlayer.setOnPreparedListener {
             currentState = PlayerState.PREPARED
-            SLog.i(PlayerEngine.TAG,"onPrepared, url = $mUrl")
+            SLog.i(PlayerEngine.TAG,"onPrepared, url = $mUrl duration = $lsDuration ms")
             callback?.onPrepared()
-            it.start()
+            lsDuration = getDuration()
+            callback?.onFetchDurationFinished(lsDuration)
+            if(isLsAutoPlay){
+                it.start()
+            }
         }
         mediaPlayer.setOnCompletionListener {
             currentState = PlayerState.COMPLETION
@@ -36,7 +42,7 @@ class MediaPlayerWrapper(private val context: Context) :CommonPlayer(){
         }
         mediaPlayer.setOnErrorListener { _, what, extra ->
             currentState = PlayerState.ERROR
-            callback?.onError(LsErrorInfo(what,"",extra.toString()))
+            callback?.onError(LsInfo(what,"",extra.toString()))
             true
         }
         mediaPlayer.setOnVideoSizeChangedListener { _, width, height ->
@@ -44,12 +50,27 @@ class MediaPlayerWrapper(private val context: Context) :CommonPlayer(){
             callback?.onVideoSizeChanged(width, height)
         }
         mediaPlayer.setOnInfoListener { _, what, extra ->
-            callback?.onError(MediaAdapter.transformErrorInfo(what,extra))
+            callback?.onInfo(MediaAdapter.transformInfo(what,extra))
+            when(what){
+                MediaPlayer.MEDIA_INFO_BUFFERING_START ->{
+                    //开始缓冲
+                    callback?.onBufferingBegin()
+                }
+                MediaPlayer.MEDIA_INFO_BUFFERING_END ->{
+                    //结束缓冲
+                    callback?.onBufferingEnd()
+                }
+                MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START ->{
+                    //视频开始渲染
+                    callback?.onRenderingStart()
+                }
+            }
+            SLog.i(PlayerEngine.TAG, "onInfo,$what $extra")
             true
         }
         mediaPlayer.setOnBufferingUpdateListener { _, percent ->
-            SLog.i(PlayerEngine.TAG, "onLoadingProgress $percent ")
-            callback?.onLoadingProgress(percent, 0f)
+            SLog.i(PlayerEngine.TAG, "onBufferingProgress $percent ")
+            callback?.onBufferingProgress(percent, 0f)
         }
         mediaPlayer.setOnSeekCompleteListener {
             SLog.i(PlayerEngine.TAG, "onSeekComplete")
@@ -117,9 +138,18 @@ class MediaPlayerWrapper(private val context: Context) :CommonPlayer(){
     override fun setDataSource(uri: String) {
         mediaPlayer.setDataSource(uri)
         currentState = PlayerState.INITALIZED
+        mUrl = uri
     }
 
     override fun prepare() {
+        super.prepare()
+        isLsAutoPlay = false
+        mediaPlayer.prepareAsync()
+    }
+
+    override fun prepareAndStart() {
+        super.prepare()
+        isLsAutoPlay = true
         mediaPlayer.prepareAsync()
     }
 
@@ -152,11 +182,16 @@ class MediaPlayerWrapper(private val context: Context) :CommonPlayer(){
     }
 
     override fun setMute(isMute: Boolean) {
-        // TODO: 2020/8/17
+        if(isMute){
+            setVolume(0f)
+        }else{
+            setVolume(mVolume)
+        }
+        mIsMute = isMute
     }
 
     override fun isMute(): Boolean {
-        TODO("Not yet implemented")
+        return mIsMute
     }
 
     override fun setLoop(isLoop: Boolean) {
@@ -164,7 +199,7 @@ class MediaPlayerWrapper(private val context: Context) :CommonPlayer(){
     }
 
     override fun reload() {
-        // TODO: 2020/8/17
+
     }
 
     override fun isPlaying(): Boolean {
@@ -185,13 +220,24 @@ class MediaPlayerWrapper(private val context: Context) :CommonPlayer(){
     }
 
     override fun config(config: LsConfig?) {
+        SLog.i(PlayerEngine.TAG,"config:$config")
         mediaPlayer.setAudioAttributes(AudioAttributes.Builder().setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build())
+        mediaPlayer.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING)
         config?.let {
             mediaPlayer.isLooping = it.isLoop
         }
     }
 
     override fun setScaleMode(mode: LsScaleMode) {
+        mediaPlayer.setVideoScalingMode(MediaAdapter.transformScaleMode(mode))
+    }
 
+    override fun setVolume(volume: Float) {
+        mediaPlayer.setVolume(volume,volume)
+        mVolume = volume
+    }
+
+    override fun getDuration(): Long {
+        return mediaPlayer.duration.toLong()
     }
 }

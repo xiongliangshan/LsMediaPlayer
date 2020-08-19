@@ -21,7 +21,7 @@ interface LsPlayerCallback : CommonCallback {
     /**
      * 其他信息的事件，type包括了：循环播放开始，缓冲位置，当前播放位置，自动播放开始等
      */
-    fun onInfo(infoBean:InfoBean?)
+    fun onInfo(info:LsInfo?)
 
 
     /**

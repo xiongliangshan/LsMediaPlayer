@@ -11,9 +11,7 @@ import androidx.lifecycle.LifecycleOwner
 import com.aliyun.player.AliPlayer
 import com.aliyun.player.AliPlayerFactory
 import com.aliyun.player.IPlayer
-import com.aliyun.player.bean.ErrorInfo
 import com.aliyun.player.bean.InfoCode
-import com.aliyun.player.nativeclass.TrackInfo
 import com.aliyun.player.source.UrlSource
 import com.xls.player.*
 import com.xls.player.log.SLog
@@ -27,6 +25,8 @@ class AliPlayerWrapper(private val context:Context): CommonPlayer() {
     }
 
     override fun config(config: LsConfig?) {
+        SLog.i(PlayerEngine.TAG,"config $config")
+        aliPlayer.isAutoPlay = false
         config?.let {
             aliPlayer.isLoop = it.isLoop
             it.cacheConfig?.run {
@@ -43,9 +43,13 @@ class AliPlayerWrapper(private val context:Context): CommonPlayer() {
 
     private fun setListeners(){
         aliPlayer.setOnPreparedListener {
-            SLog.i(PlayerEngine.TAG,"onPrepared, url = $mUrl")
             callback?.onPrepared()
-            aliPlayer.start()
+            lsDuration = getDuration()
+            callback?.onFetchDurationFinished(lsDuration)
+            if(isLsAutoPlay){
+                aliPlayer.start()
+            }
+            SLog.i(PlayerEngine.TAG,"onPrepared, url = $mUrl duration = $lsDuration ms")
         }
         aliPlayer.setOnCompletionListener{
             SLog.i(PlayerEngine.TAG,"onCompletion")
@@ -53,7 +57,7 @@ class AliPlayerWrapper(private val context:Context): CommonPlayer() {
         }
         aliPlayer.setOnErrorListener{
             SLog.e(PlayerEngine.TAG,"onError ${it.code} | ${it.msg} | ${it.extra}")
-            callback?.onError(LsErrorInfo(it.code.value,it.msg,it.extra))
+            callback?.onError(LsInfo(it.code.value,it.msg,it.extra))
         }
         aliPlayer.setOnVideoSizeChangedListener { p0, p1 ->
             SLog.i(PlayerEngine.TAG, "onVideoSizeChanged,width = $p0 height = $p1")
@@ -64,7 +68,7 @@ class AliPlayerWrapper(private val context:Context): CommonPlayer() {
             callback?.onRenderingStart()
         }
         aliPlayer.setOnInfoListener { infoBean ->
-            callback?.onInfo(infoBean)
+            callback?.onInfo(AliAdapter.transformInfo(infoBean))
             when(infoBean.code){
                 InfoCode.CacheSuccess ->{
                     //缓存成功
@@ -78,13 +82,48 @@ class AliPlayerWrapper(private val context:Context): CommonPlayer() {
                     //切换到软解
                     SLog.i(PlayerEngine.TAG,"onInfo,switch to software video decoder")
                 }
+                InfoCode.AudioCodecNotSupport ->{
+                    //音频解码格式不支持
+                    SLog.e(PlayerEngine.TAG,"onInfo,audio codec not support:${infoBean?.extraMsg}")
+                }
                 InfoCode.AudioDecoderDeviceError ->{
                     //音频解码失败
                     SLog.e(PlayerEngine.TAG,"onInfo,audio decoder device error:${infoBean?.extraMsg}")
                 }
+                InfoCode.VideoCodecNotSupport ->{
+                    //视频解码格式不支持
+                    SLog.e(PlayerEngine.TAG,"onInfo,video codec not support:${infoBean?.extraMsg}")
+                }
+                InfoCode.VideoDecoderDeviceError ->{
+                    //视频解码器设备失败
+                    SLog.e(PlayerEngine.TAG,"onInfo,video decoder device error:${infoBean?.extraMsg}")
+                }
+                InfoCode.VideoRenderInitError ->{
+                    //视频渲染设备初始化失败
+                    SLog.e(PlayerEngine.TAG,"onInfo,video render init error:${infoBean?.extraMsg}")
+                }
                 InfoCode.LowMemory ->{
                     //内存低
                     SLog.w(PlayerEngine.TAG,"onInfo,low memory:${infoBean?.extraMsg}")
+                }
+                InfoCode.CurrentPosition ->{
+                    //当前播放位置
+                    if(lsDuration==0L){
+                        lsDuration = getDuration()
+                    }
+                    if(lsDuration!=0L){
+
+                        infoBean?.let {
+                            val progressPercent = (it.extraValue*100f/lsDuration).toInt()
+                            callback?.onPlayProgress(progressPercent)
+                            SLog.d(PlayerEngine.TAG,"onInfo,progress: ${it.extraValue}  $progressPercent")
+                        }
+
+                    }else{
+                        SLog.d(PlayerEngine.TAG,"onInfo,current position:  ${infoBean?.extraValue}")
+                    }
+
+
                 }
                 else ->{
                     SLog.d(PlayerEngine.TAG, "onInfo,info = ${infoBean?.code} ${infoBean?.extraValue}  ${infoBean?.extraMsg}")
@@ -93,18 +132,18 @@ class AliPlayerWrapper(private val context:Context): CommonPlayer() {
         }
         aliPlayer.setOnLoadingStatusListener(object :IPlayer.OnLoadingStatusListener{
             override fun onLoadingBegin() {
-                SLog.i(PlayerEngine.TAG, "onLoadingBegin")
-                callback?.onLoadingBegin()
+                SLog.i(PlayerEngine.TAG, "onBufferingBegin")
+                callback?.onBufferingBegin()
             }
 
             override fun onLoadingProgress(p0: Int, p1: Float) {
-                SLog.i(PlayerEngine.TAG, "onLoadingProgress $p0 $p1")
-                callback?.onLoadingProgress(p0,p1)
+                SLog.i(PlayerEngine.TAG, "onBufferingProgress $p0 $p1")
+                callback?.onBufferingProgress(p0,p1)
             }
 
             override fun onLoadingEnd() {
-                SLog.i(PlayerEngine.TAG, "onLoadingEnd")
-                callback?.onLoadingEnd()
+                SLog.i(PlayerEngine.TAG, "onBufferingEnd")
+                callback?.onBufferingEnd()
             }
         })
         aliPlayer.setOnSeekCompleteListener {
@@ -132,6 +171,14 @@ class AliPlayerWrapper(private val context:Context): CommonPlayer() {
     }
 
     override fun prepare() {
+        super.prepare()
+        isLsAutoPlay = false
+        aliPlayer.prepare()
+    }
+
+    override fun prepareAndStart() {
+        super.prepare()
+        isLsAutoPlay = true
         aliPlayer.prepare()
     }
 
@@ -239,6 +286,10 @@ class AliPlayerWrapper(private val context:Context): CommonPlayer() {
         aliPlayer.scaleMode = AliAdapter.transformScaleMode(mode)
     }
 
+    override fun setVolume(volume: Float) {
+        aliPlayer.volume = volume
+    }
+
     override fun bindLifecycle(owner: LifecycleOwner?) {
         if(owner!=null){
             owner.lifecycle.addObserver(object :DefaultLifecycleObserver{
@@ -250,5 +301,9 @@ class AliPlayerWrapper(private val context:Context): CommonPlayer() {
         }else{
             SLog.w(PlayerEngine.TAG,"bindLifecycle failed: owner is null")
         }
+    }
+
+    override fun getDuration(): Long {
+        return aliPlayer.duration
     }
 }

@@ -1,9 +1,7 @@
 package com.xls.player
 
 import android.graphics.Bitmap
-import com.aliyun.player.bean.ErrorInfo
 import com.aliyun.player.bean.InfoBean
-import com.aliyun.player.nativeclass.TrackInfo
 
 open class SimpleLsPlayerCallback :LsPlayerCallback{
     override fun onVideoSizeChanged(width: Int, height: Int) {
@@ -14,26 +12,7 @@ open class SimpleLsPlayerCallback :LsPlayerCallback{
 
     }
 
-    override fun onInfo(infoBean: InfoBean?) {
-    }
-
-    override fun onSubtitleShow(p0: Int, id: Long, data: String?) {
-
-    }
-
-    override fun onSubtitleExtAdded(p0: Int, p1: String?) {
-
-    }
-
-    override fun onSubtitleHide(p0: Int, id: Long) {
-
-    }
-
-    override fun onChangedSuccess(trackInfo: TrackInfo?) {
-
-    }
-
-    override fun onChangedFail(trackInfo: TrackInfo?, errorInfo: ErrorInfo?) {
+    override fun onInfo(info: LsInfo?) {
 
     }
 
@@ -49,19 +28,19 @@ open class SimpleLsPlayerCallback :LsPlayerCallback{
 
     }
 
-    override fun onError(errorInfo: LsErrorInfo) {
+    override fun onError(info: LsInfo) {
 
     }
 
-    override fun onLoadingBegin() {
+    override fun onBufferingBegin() {
 
     }
 
-    override fun onLoadingProgress(percent: Int, kbps: Float) {
+    override fun onBufferingProgress(percent: Int, kbps: Float) {
 
     }
 
-    override fun onLoadingEnd() {
+    override fun onBufferingEnd() {
 
     }
 
@@ -70,6 +49,14 @@ open class SimpleLsPlayerCallback :LsPlayerCallback{
     }
 
     override fun onStateChanged(newState: Int) {
+
+    }
+
+    override fun onFetchDurationFinished(duration: Long) {
+
+    }
+
+    override fun onPlayProgress(percent: Int) {
 
     }
 }
