@@ -16,9 +16,10 @@ import com.aliyun.player.source.UrlSource
 import com.xls.player.*
 import com.xls.player.log.SLog
 
-class AliPlayerWrapper(private val context:Context): CommonPlayer() {
+class AliPlayerWrapper(context:Context): CommonPlayer() {
 
     private var aliPlayer:AliPlayer = AliPlayerFactory.createAliPlayer(context.applicationContext)
+    private var mCurrentPosition:Long = 0L
     init {
         setListeners()
         SLog.i(PlayerEngine.TAG,"create player instance : AliPlayer")
@@ -27,6 +28,7 @@ class AliPlayerWrapper(private val context:Context): CommonPlayer() {
     override fun config(config: LsConfig?) {
         SLog.i(PlayerEngine.TAG,"config $config")
         aliPlayer.isAutoPlay = false
+        aliPlayer.isLoop = false
         config?.let {
             aliPlayer.isLoop = it.isLoop
             it.cacheConfig?.run {
@@ -114,9 +116,10 @@ class AliPlayerWrapper(private val context:Context): CommonPlayer() {
                     if(lsDuration!=0L){
 
                         infoBean?.let {
-                            val progressPercent = (it.extraValue*100f/lsDuration).toInt()
+                            mCurrentPosition = it.extraValue
+                            val progressPercent = (mCurrentPosition*100f/lsDuration).toInt()
                             callback?.onPlayProgress(progressPercent)
-                            SLog.d(PlayerEngine.TAG,"onInfo,progress: ${it.extraValue}  $progressPercent")
+                            SLog.d(PlayerEngine.TAG,"onInfo,progress: $mCurrentPosition  $progressPercent%")
                         }
 
                     }else{
@@ -152,9 +155,12 @@ class AliPlayerWrapper(private val context:Context): CommonPlayer() {
         }
 
         aliPlayer.setOnStateChangedListener { p0 ->
-            currentState = PlayerState.convert(p0)
-            SLog.i(PlayerEngine.TAG, "onStateChanged : $currentState")
-            callback?.onStateChanged(p0)
+            val state = PlayerState.convert(p0)
+            if(currentState!=state){
+                currentState = state
+                SLog.i(PlayerEngine.TAG, "onStateChanged : $currentState")
+                callback?.onStateChanged(currentState)
+            }
         }
         aliPlayer.setOnSnapShotListener { p0, p1, p2 ->
             SLog.i(PlayerEngine.TAG, "onSnapShot,${p0?.hashCode()} $p1 $p2")
@@ -183,6 +189,9 @@ class AliPlayerWrapper(private val context:Context): CommonPlayer() {
     }
 
     override fun start() {
+        if(isPlaying()){
+            return
+        }
         aliPlayer.start()
     }
 
@@ -305,5 +314,9 @@ class AliPlayerWrapper(private val context:Context): CommonPlayer() {
 
     override fun getDuration(): Long {
         return aliPlayer.duration
+    }
+
+    override fun getCurrentPosition(): Long {
+        return mCurrentPosition
     }
 }

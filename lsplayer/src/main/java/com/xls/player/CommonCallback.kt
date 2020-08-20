@@ -39,7 +39,7 @@ interface CommonCallback {
     /**
      * 播放器状态改变事件
      */
-    fun onStateChanged(newState:Int)
+    fun onStateChanged(state: PlayerState)
 
     /**
      * 内部获取总时长完成，

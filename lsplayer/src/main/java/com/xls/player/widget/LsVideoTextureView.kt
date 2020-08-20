@@ -11,20 +11,18 @@ class LsVideoTextureView @JvmOverloads constructor(
     context: Context?,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
-) : TextureView(context, attrs, defStyleAttr),ILsPlayer {
+) : TextureView(context, attrs, defStyleAttr), ILsPlayer {
 
     private lateinit var player: CommonPlayer
-    var currentState:PlayerState = PlayerState.IDLE
-        set(value) {
-            field = value
-            player.currentState = value
-        }
-    var mUrl:String? = null
-        set(value) {
-            field = value
-            player.mUrl = value
-        }
-    var lsConfig:LsConfig? = null
+    var currentState: PlayerState = PlayerState.IDLE
+        private set
+        get() = player.currentState
+
+    var source: String? = null
+        private set
+        get() = player.mUrl
+
+    var lsConfig: LsConfig? = null
         set(value) {
             field = value
             player.lsConfig = value
@@ -35,16 +33,14 @@ class LsVideoTextureView @JvmOverloads constructor(
             field = value
             player.callback = value
         }
-    private var  playerValue:Int = PlayerType.Ali.ordinal
-
-
+    private var playerValue: Int = PlayerType.Ali.ordinal
 
 
     init {
         context?.run {
             attrs.let {
                 val typedArray = context.obtainStyledAttributes(it, R.styleable.LsVideoTextureView)
-                playerValue = typedArray.getInt(R.styleable.LsVideoTextureView_t_player_type,1)
+                playerValue = typedArray.getInt(R.styleable.LsVideoTextureView_t_player_type, 1)
                 typedArray.recycle()
             }
             player = PlayerEngine.createPlayer(this, PlayerType.convert(playerValue))
@@ -54,7 +50,7 @@ class LsVideoTextureView @JvmOverloads constructor(
     }
 
 
-    private fun bindRender(){
+    private fun bindRender() {
         player.setDisplay(this)
     }
 
@@ -130,5 +126,9 @@ class LsVideoTextureView @JvmOverloads constructor(
 
     override fun getDuration(): Long {
         return player.getDuration()
+    }
+
+    override fun getCurrentPosition(): Long {
+        return player.getCurrentPosition()
     }
 }

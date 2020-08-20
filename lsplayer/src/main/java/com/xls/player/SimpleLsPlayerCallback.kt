@@ -48,7 +48,7 @@ open class SimpleLsPlayerCallback :LsPlayerCallback{
 
     }
 
-    override fun onStateChanged(newState: Int) {
+    override fun onStateChanged(state: PlayerState) {
 
     }
 
@@ -59,4 +59,5 @@ open class SimpleLsPlayerCallback :LsPlayerCallback{
     override fun onPlayProgress(percent: Int) {
 
     }
+
 }

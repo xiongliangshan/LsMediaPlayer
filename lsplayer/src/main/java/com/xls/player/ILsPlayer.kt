@@ -99,4 +99,10 @@ interface ILsPlayer {
      */
     fun getDuration():Long
 
+    /**
+     * 获取当前播放的媒体位置
+     * 返回值单位ms
+     */
+    fun getCurrentPosition():Long
+
 }

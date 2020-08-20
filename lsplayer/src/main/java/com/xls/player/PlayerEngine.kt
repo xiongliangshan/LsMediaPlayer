@@ -12,7 +12,7 @@ class PlayerEngine {
         fun createPlayer(context:Context,type:PlayerType = PlayerType.Ali):CommonPlayer{
             return when(type){
                 PlayerType.Ali -> AliPlayerWrapper(context)
-                PlayerType.Media -> MediaPlayerWrapper(context)
+                PlayerType.Media -> MediaPlayerWrapper()
                 else ->{
                     AliPlayerWrapper(context)
                 }

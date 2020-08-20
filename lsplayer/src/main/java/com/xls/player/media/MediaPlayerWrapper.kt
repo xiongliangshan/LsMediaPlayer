@@ -1,6 +1,5 @@
 package com.xls.player.media
 
-import android.content.Context
 import android.graphics.SurfaceTexture
 import android.media.AudioAttributes
 import android.media.MediaPlayer
@@ -12,37 +11,68 @@ import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import com.xls.player.*
 import com.xls.player.log.SLog
+import java.util.*
 
-class MediaPlayerWrapper(private val context: Context) :CommonPlayer(){
+class MediaPlayerWrapper :CommonPlayer(){
 
     private var mediaPlayer: MediaPlayer = MediaPlayer()
     private var mIsMute = false
     private var mVolume = 1f
+    private var mTimer:Timer? = null
+    private var progressPercent = 0
+
+    companion object{
+        const val TIMER_PERIOD = 500L
+        const val MAX_PROGRESS = 100
+    }
+
 
     init {
         setListeners()
         SLog.i(PlayerEngine.TAG,"create player instance : MediaPlayer")
     }
 
+
+    private fun startTimer(){
+        if(mTimer==null){
+            mTimer = Timer()
+        }
+        mTimer?.scheduleAtFixedRate(LsTimerTask(),0,TIMER_PERIOD)
+    }
+
+    private fun cancelTimer(){
+        mTimer?.cancel()
+        mTimer?.purge()
+        mTimer = null
+    }
+
     private fun setListeners() {
         mediaPlayer.setOnPreparedListener {
-            currentState = PlayerState.PREPARED
+            setState(PlayerState.PREPARED)
             SLog.i(PlayerEngine.TAG,"onPrepared, url = $mUrl duration = $lsDuration ms")
             callback?.onPrepared()
             lsDuration = getDuration()
             callback?.onFetchDurationFinished(lsDuration)
             if(isLsAutoPlay){
-                it.start()
+                start()
             }
         }
         mediaPlayer.setOnCompletionListener {
-            currentState = PlayerState.COMPLETION
+            setState(PlayerState.COMPLETION)
             SLog.i(PlayerEngine.TAG,"onCompletion")
+            cancelTimer()
+            if (progressPercent < MAX_PROGRESS) {
+                progressPercent = MAX_PROGRESS
+                callback?.onPlayProgress(progressPercent)
+                SLog.i(PlayerEngine.TAG, "onInfo,progress:  $progressPercent")
+            }
             callback?.onCompletion()
         }
         mediaPlayer.setOnErrorListener { _, what, extra ->
-            currentState = PlayerState.ERROR
+            setState(PlayerState.ERROR)
+            cancelTimer()
             callback?.onError(LsInfo(what,"",extra.toString()))
+            SLog.e(PlayerEngine.TAG,"onError $what | $extra")
             true
         }
         mediaPlayer.setOnVideoSizeChangedListener { _, width, height ->
@@ -64,21 +94,43 @@ class MediaPlayerWrapper(private val context: Context) :CommonPlayer(){
                     //视频开始渲染
                     callback?.onRenderingStart()
                 }
+                MediaPlayer.MEDIA_ERROR_IO ->{
+                    //文件不存在或者网络IO错误
+                    SLog.e(PlayerEngine.TAG,"onInfo,file or network related operation errors,$what $extra")
+                }
+                MediaPlayer.MEDIA_ERROR_MALFORMED ->{
+                    SLog.e(PlayerEngine.TAG,"onInfo,bitstream is not conforming to the related coding standard or file spec,$what $extra")
+                }
+                MediaPlayer.MEDIA_ERROR_NOT_VALID_FOR_PROGRESSIVE_PLAYBACK ->{
+                    SLog.e(PlayerEngine.TAG,"onInfo,media_error_not_valid_for_progressive_playback,$what $extra")
+                }
+                MediaPlayer.MEDIA_ERROR_SERVER_DIED ->{
+                    SLog.e(PlayerEngine.TAG,"onInfo,media_error_server_died,$what $extra")
+                }
+                MediaPlayer.MEDIA_ERROR_TIMED_OUT ->{
+                    SLog.e(PlayerEngine.TAG,"onInfo,media_error_timed_out,$what $extra")
+                }
+                MediaPlayer.MEDIA_ERROR_UNKNOWN ->{
+                    SLog.e(PlayerEngine.TAG,"onInfo,media_error_unknown,$what $extra")
+                }
+                MediaPlayer.MEDIA_ERROR_UNSUPPORTED ->{
+                    SLog.e(PlayerEngine.TAG,"onInfo,media_error_unsupported,$what $extra")
+                }
+                else ->{
+                    SLog.i(PlayerEngine.TAG, "onInfo,$what $extra")
+                }
             }
-            SLog.i(PlayerEngine.TAG, "onInfo,$what $extra")
             true
         }
         mediaPlayer.setOnBufferingUpdateListener { _, percent ->
-            SLog.i(PlayerEngine.TAG, "onBufferingProgress $percent ")
+            SLog.d(PlayerEngine.TAG, "onBufferingProgress $percent ")
             callback?.onBufferingProgress(percent, 0f)
         }
         mediaPlayer.setOnSeekCompleteListener {
             SLog.i(PlayerEngine.TAG, "onSeekComplete")
             callback?.onSeekComplete()
+            startTimer()
         }
-
-
-
     }
 
 
@@ -137,7 +189,7 @@ class MediaPlayerWrapper(private val context: Context) :CommonPlayer(){
 
     override fun setDataSource(uri: String) {
         mediaPlayer.setDataSource(uri)
-        currentState = PlayerState.INITALIZED
+        setState(PlayerState.INITALIZED)
         mUrl = uri
     }
 
@@ -154,31 +206,40 @@ class MediaPlayerWrapper(private val context: Context) :CommonPlayer(){
     }
 
     override fun start() {
+        if(isPlaying()){
+            return
+        }
         mediaPlayer.start()
-        currentState = PlayerState.STARTED
+        setState(PlayerState.STARTED)
+        startTimer()
     }
 
     override fun pause() {
         mediaPlayer.pause()
-        currentState = PlayerState.PAUSED
+        setState(PlayerState.PAUSED)
+        cancelTimer()
     }
 
     override fun stop() {
         mediaPlayer.stop()
-        currentState = PlayerState.STOPPED
+        setState(PlayerState.STOPPED)
+        cancelTimer()
     }
 
     override fun seekTo(position: Long) {
+        cancelTimer()
         mediaPlayer.seekTo(position.toInt())
     }
 
     override fun reset() {
         mediaPlayer.reset()
-        currentState = PlayerState.IDLE
+        setState(PlayerState.IDLE)
+        cancelTimer()
     }
 
     override fun release() {
         mediaPlayer.release()
+        cancelTimer()
     }
 
     override fun setMute(isMute: Boolean) {
@@ -211,7 +272,7 @@ class MediaPlayerWrapper(private val context: Context) :CommonPlayer(){
             owner.lifecycle.addObserver(object : DefaultLifecycleObserver {
                 override fun onDestroy(owner: LifecycleOwner) {
                     SLog.i(PlayerEngine.TAG,"lifecycle owner destroy, player release")
-                    mediaPlayer.release()
+                    release()
                 }
             })
         }else{
@@ -223,6 +284,7 @@ class MediaPlayerWrapper(private val context: Context) :CommonPlayer(){
         SLog.i(PlayerEngine.TAG,"config:$config")
         mediaPlayer.setAudioAttributes(AudioAttributes.Builder().setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).build())
         mediaPlayer.setVideoScalingMode(MediaPlayer.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING)
+        mediaPlayer.isLooping = false
         config?.let {
             mediaPlayer.isLooping = it.isLoop
         }
@@ -234,10 +296,42 @@ class MediaPlayerWrapper(private val context: Context) :CommonPlayer(){
 
     override fun setVolume(volume: Float) {
         mediaPlayer.setVolume(volume,volume)
-        mVolume = volume
+        if(volume!=0f){
+            mVolume = volume
+        }
     }
 
     override fun getDuration(): Long {
         return mediaPlayer.duration.toLong()
+    }
+
+    override fun getCurrentPosition(): Long {
+        return mediaPlayer.currentPosition.toLong()
+    }
+
+    private fun setState(state:PlayerState){
+        if(currentState!=state){
+            currentState = state
+            SLog.i(PlayerEngine.TAG, "onStateChanged : $currentState")
+            callback?.onStateChanged(state)
+        }
+
+    }
+
+    inner class LsTimerTask:TimerTask(){
+        override fun run() {
+            //当前播放位置
+            if (lsDuration == 0L) {
+                lsDuration = getDuration()
+            }
+            val currentPos = getCurrentPosition()
+            if (lsDuration != 0L) {
+                progressPercent = (currentPos * 100f / lsDuration).toInt()
+                callback?.onPlayProgress(progressPercent)
+                SLog.d(PlayerEngine.TAG, "onInfo,progress:  $currentPos  $progressPercent%")
+            } else {
+                SLog.d(PlayerEngine.TAG, "onInfo,current position: $currentPos")
+            }
+        }
     }
 }

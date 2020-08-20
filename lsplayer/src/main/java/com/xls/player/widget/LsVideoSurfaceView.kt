@@ -16,17 +16,15 @@ class LsVideoSurfaceView @JvmOverloads constructor(
 ) : SurfaceView(context, attrs, defStyleAttr), ILsPlayer {
 
     private lateinit var player: CommonPlayer
-    var currentState:PlayerState = PlayerState.IDLE
-        set(value) {
-            field = value
-            player.currentState = value
-        }
-    var mUrl:String? = null
-        set(value) {
-            field = value
-            player.mUrl = value
-        }
-    var lsConfig:LsConfig? = null
+    var currentState: PlayerState = PlayerState.IDLE
+        private set
+        get() = player.currentState
+
+    var source: String? = null
+        private set
+        get() = player.mUrl
+
+    var lsConfig: LsConfig? = null
         set(value) {
             field = value
             player.lsConfig = value
@@ -44,7 +42,7 @@ class LsVideoSurfaceView @JvmOverloads constructor(
         context?.run {
             attrs.let {
                 val typedArray = context.obtainStyledAttributes(it, R.styleable.LsVideoSurfaceView)
-                playerValue = typedArray.getInt(R.styleable.LsVideoSurfaceView_s_player_type,1)
+                playerValue = typedArray.getInt(R.styleable.LsVideoSurfaceView_s_player_type, 1)
                 typedArray.recycle()
             }
             player = PlayerEngine.createPlayer(this, PlayerType.convert(playerValue))
@@ -53,7 +51,7 @@ class LsVideoSurfaceView @JvmOverloads constructor(
         bindRender()
     }
 
-    private fun bindRender(){
+    private fun bindRender() {
         player.setDisplay(this)
     }
 
@@ -128,5 +126,9 @@ class LsVideoSurfaceView @JvmOverloads constructor(
 
     override fun getDuration(): Long {
         return player.getDuration()
+    }
+
+    override fun getCurrentPosition(): Long {
+        return player.getCurrentPosition()
     }
 }
