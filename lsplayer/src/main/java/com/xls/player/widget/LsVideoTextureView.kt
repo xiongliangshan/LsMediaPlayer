@@ -11,7 +11,7 @@ class LsVideoTextureView @JvmOverloads constructor(
     context: Context?,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
-) : TextureView(context, attrs, defStyleAttr), ILsPlayer {
+) : TextureView(context, attrs, defStyleAttr), ILsPlayer,ILsRender {
 
     private lateinit var player: CommonPlayer
     var currentState: PlayerState = PlayerState.IDLE
@@ -40,7 +40,7 @@ class LsVideoTextureView @JvmOverloads constructor(
         context?.run {
             attrs.let {
                 val typedArray = context.obtainStyledAttributes(it, R.styleable.LsVideoTextureView)
-                playerValue = typedArray.getInt(R.styleable.LsVideoTextureView_t_player_type, 1)
+                playerValue = typedArray.getInt(R.styleable.LsVideoTextureView_player_type, 1)
                 typedArray.recycle()
             }
             player = PlayerEngine.createPlayer(this, PlayerType.convert(playerValue))
@@ -130,5 +130,11 @@ class LsVideoTextureView @JvmOverloads constructor(
 
     override fun getCurrentPosition(): Long {
         return player.getCurrentPosition()
+    }
+
+    override fun fastStart(url: String, callback: SimpleLsPlayerCallback?) {
+        player.callback = callback
+        player.setDataSource(url)
+        player.prepareAndStart()
     }
 }

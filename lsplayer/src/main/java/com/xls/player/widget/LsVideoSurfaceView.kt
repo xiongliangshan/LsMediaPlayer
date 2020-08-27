@@ -6,14 +6,12 @@ import android.view.SurfaceView
 import androidx.lifecycle.LifecycleOwner
 import com.example.lib_player.R
 import com.xls.player.*
-import com.xls.player.log.SLog
-import java.util.logging.Logger
 
 class LsVideoSurfaceView @JvmOverloads constructor(
     context: Context?,
     attrs: AttributeSet? = null,
     defStyleAttr: Int = 0
-) : SurfaceView(context, attrs, defStyleAttr), ILsPlayer {
+) : SurfaceView(context, attrs, defStyleAttr), ILsPlayer,ILsRender {
 
     private lateinit var player: CommonPlayer
     var currentState: PlayerState = PlayerState.IDLE
@@ -42,7 +40,7 @@ class LsVideoSurfaceView @JvmOverloads constructor(
         context?.run {
             attrs.let {
                 val typedArray = context.obtainStyledAttributes(it, R.styleable.LsVideoSurfaceView)
-                playerValue = typedArray.getInt(R.styleable.LsVideoSurfaceView_s_player_type, 1)
+                playerValue = typedArray.getInt(R.styleable.LsVideoSurfaceView_player_type, 1)
                 typedArray.recycle()
             }
             player = PlayerEngine.createPlayer(this, PlayerType.convert(playerValue))
@@ -130,5 +128,11 @@ class LsVideoSurfaceView @JvmOverloads constructor(
 
     override fun getCurrentPosition(): Long {
         return player.getCurrentPosition()
+    }
+
+    override fun fastStart(url: String, callback: SimpleLsPlayerCallback?) {
+        player.callback = callback
+        player.setDataSource(url)
+        player.prepareAndStart()
     }
 }

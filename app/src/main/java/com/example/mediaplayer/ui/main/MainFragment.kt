@@ -69,6 +69,7 @@ class MainFragment : Fragment(),View.OnClickListener {
 //            player?.setDisplay(player)
             player?.setDataSource(url1)
             player?.prepareAndStart()
+
         }
         btnStart.setOnClickListener(this)
         btnPause.setOnClickListener(this)
@@ -143,4 +144,6 @@ class MainFragment : Fragment(),View.OnClickListener {
             }
         }
     }
+
+
 }

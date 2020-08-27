@@ -105,4 +105,5 @@ interface ILsPlayer {
      */
     fun getCurrentPosition():Long
 
+
 }
