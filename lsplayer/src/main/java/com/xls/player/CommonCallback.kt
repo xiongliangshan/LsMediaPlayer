@@ -50,5 +50,5 @@ interface CommonCallback {
     /**
      * 播放进度
      */
-    fun onPlayProgress(percent:Int)
+    fun onPlayProgress(currentPos:Long,percent:Int)
 }

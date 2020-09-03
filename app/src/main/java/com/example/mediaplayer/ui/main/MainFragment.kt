@@ -48,6 +48,10 @@ class MainFragment : Fragment(),View.OnClickListener {
                 .build()
             player?.bindLifecycle(MainFragment@this)
             player?.callback = object :SimpleLsPlayerCallback(){
+
+                override fun onFetchDurationFinished(duration: Long) {
+                    totalTime.text = formatTime(duration)
+                }
                 override fun onError(info: LsInfo) {
 
                 }
@@ -60,10 +64,11 @@ class MainFragment : Fragment(),View.OnClickListener {
                     progressBar?.visibility = View.GONE
                 }
 
-                override fun onPlayProgress(percent: Int) {
+                override fun onPlayProgress(currentPos: Long, percent: Int) {
                     if(!isTracking){
                         seekBar?.progress = percent
                     }
+                    currentTime.text = formatTime(currentPos)
                 }
             }
 //            player?.setDisplay(player)
@@ -83,6 +88,7 @@ class MainFragment : Fragment(),View.OnClickListener {
                 if(isTracking){
                     val currentPos = (player.getDuration()*progress/100f).toLong()
                     player.seekTo(currentPos)
+                    currentTime.text = formatTime(currentPos)
                 }
             }
 
@@ -94,6 +100,57 @@ class MainFragment : Fragment(),View.OnClickListener {
                 isTracking = false
             }
         })
+    }
+
+    private fun formatTime(time:Long):String{
+         val second = time/1000
+         var secondStr = "00"
+         var minuteStr = "00"
+         var hourStr = "00"
+         when(second){
+            in 0 until 60 ->{
+                secondStr = if(second <10){
+                    "0$second"
+                }else{
+                    second.toString()
+                }
+            }
+            in 60 until 60*60 ->{
+                val minute = second/60
+                minuteStr = if(minute<10){
+                    "0$minute"
+                }else{
+                    minute.toString()
+                }
+                val s  = second%60
+                secondStr = if(s<10){
+                    "0$s"
+                }else{
+                    s.toString()
+                }
+            }
+            else ->{
+                val hour = second/60*60
+                hourStr = if(hour<10){
+                    "0$hour"
+                }else{
+                    hour.toString()
+                }
+                val m = second%3600/60
+                minuteStr = if(m<10){
+                    "0$m"
+                }else{
+                    m.toString()
+                }
+                val s = second%3600%60
+                secondStr = if(s<10){
+                    "0$s"
+                }else{
+                    s.toString()
+                }
+            }
+        }
+        return "$hourStr : $minuteStr : $secondStr"
     }
 
 

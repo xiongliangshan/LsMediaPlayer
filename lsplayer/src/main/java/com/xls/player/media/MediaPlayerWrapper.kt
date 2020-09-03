@@ -3,6 +3,8 @@ package com.xls.player.media
 import android.graphics.SurfaceTexture
 import android.media.AudioAttributes
 import android.media.MediaPlayer
+import android.os.Handler
+import android.os.Looper
 import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
@@ -20,6 +22,7 @@ class MediaPlayerWrapper :CommonPlayer(){
     private var mVolume = 1f
     private var mTimer:Timer? = null
     private var progressPercent = 0
+    private var handler:Handler? = null
 
     companion object{
         const val TIMER_PERIOD = 500L
@@ -28,6 +31,7 @@ class MediaPlayerWrapper :CommonPlayer(){
 
 
     init {
+        handler = Handler(Looper.getMainLooper())
         setListeners()
         SLog.i(PlayerEngine.TAG,"create player instance : MediaPlayer")
     }
@@ -49,10 +53,10 @@ class MediaPlayerWrapper :CommonPlayer(){
     private fun setListeners() {
         mediaPlayer.setOnPreparedListener {
             setState(PlayerState.PREPARED)
-            SLog.i(PlayerEngine.TAG,"onPrepared, url = $mUrl duration = $lsDuration ms")
             callback?.onPrepared()
             lsDuration = getDuration()
             callback?.onFetchDurationFinished(lsDuration)
+            SLog.i(PlayerEngine.TAG,"onPrepared, url = $mUrl duration = $lsDuration ms")
             if(isLsAutoPlay){
                 start()
             }
@@ -63,7 +67,7 @@ class MediaPlayerWrapper :CommonPlayer(){
             cancelTimer()
             if (progressPercent < MAX_PROGRESS) {
                 progressPercent = MAX_PROGRESS
-                callback?.onPlayProgress(progressPercent)
+                callback?.onPlayProgress(lsDuration,progressPercent)
                 SLog.i(PlayerEngine.TAG, "onInfo,progress:  $progressPercent")
             }
             callback?.onCompletion()
@@ -273,6 +277,7 @@ class MediaPlayerWrapper :CommonPlayer(){
                 override fun onDestroy(owner: LifecycleOwner) {
                     SLog.i(PlayerEngine.TAG,"lifecycle owner destroy, player release")
                     release()
+                    handler?.removeCallbacksAndMessages(null)
                 }
             })
         }else{
@@ -327,7 +332,9 @@ class MediaPlayerWrapper :CommonPlayer(){
             val currentPos = getCurrentPosition()
             if (lsDuration != 0L) {
                 progressPercent = (currentPos * 100f / lsDuration).toInt()
-                callback?.onPlayProgress(progressPercent)
+                handler?.post{
+                    callback?.onPlayProgress(currentPos,progressPercent)
+                }
                 SLog.d(PlayerEngine.TAG, "onInfo,progress:  $currentPos  $progressPercent%")
             } else {
                 SLog.d(PlayerEngine.TAG, "onInfo,current position: $currentPos")

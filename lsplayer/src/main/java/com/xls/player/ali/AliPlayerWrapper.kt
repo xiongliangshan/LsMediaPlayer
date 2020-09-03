@@ -118,7 +118,7 @@ class AliPlayerWrapper(context:Context): CommonPlayer() {
                         infoBean?.let {
                             mCurrentPosition = it.extraValue
                             val progressPercent = (mCurrentPosition*100f/lsDuration).toInt()
-                            callback?.onPlayProgress(progressPercent)
+                            callback?.onPlayProgress(mCurrentPosition,progressPercent)
                             SLog.d(PlayerEngine.TAG,"onInfo,progress: $mCurrentPosition  $progressPercent%")
                         }
 

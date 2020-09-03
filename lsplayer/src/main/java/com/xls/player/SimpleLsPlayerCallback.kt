@@ -56,8 +56,7 @@ open class SimpleLsPlayerCallback :LsPlayerCallback{
 
     }
 
-    override fun onPlayProgress(percent: Int) {
+    override fun onPlayProgress(currentPos: Long, percent: Int) {
 
     }
-
 }
